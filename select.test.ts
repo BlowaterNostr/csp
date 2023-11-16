@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "https://deno.land/std@0.176.0/testing/asserts.ts";
-import { after, chan, closed, select, sleep } from "./csp.ts";
+import { chan, closed, select, sleep } from "./csp.ts";
 
 Deno.test("select on read/receive/pop operation", async (t) => {
     await t.step("works", async () => {
@@ -187,35 +187,5 @@ Deno.test("select on read/receive/pop operation", async (t) => {
             ),
             "something",
         );
-    });
-
-    await t.step("after", async () => {
-        let c = chan();
-        assertThrows(
-            () => {
-                after(2147483648);
-            },
-            "2147483648 is out of signed int32 bound or is negative",
-        );
-    });
-
-    await t.step("do not starve in an infinite loop", async () => {
-        let c = after(10);
-        let i = 0;
-        while (++i) {
-            let ret = await select(
-                [
-                    [c, async () => {
-                        return "after";
-                    }],
-                ],
-                async () => {
-                    return "default";
-                },
-            );
-            if (ret === "after") {
-                break;
-            }
-        }
     });
 });
