@@ -249,20 +249,6 @@ export async function select<Result>(
 
 const MAX_INT_32 = Math.pow(2, 32) / 2 - 1;
 
-export function after(ms: number): Channel<number> {
-    if (0 > ms || ms > MAX_INT_32) {
-        throw new Error(`${ms} is out of signed int32 bound or is negative`);
-    }
-    let c = new Channel<number>();
-    async function f() {
-        await sleep(ms);
-        console.log("123")
-        await c.put(ms); // todo: should it close or put?
-    }
-    f();
-    return c;
-}
-
 // A promised setTimeout.
 export const not_cancelled = Symbol();
 export function sleep<T = never>(ms: number, cancel?: Promise<T>) {
