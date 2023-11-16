@@ -198,24 +198,26 @@ Deno.test("select on read/receive/pop operation", async (t) => {
             "2147483648 is out of signed int32 bound or is negative",
         );
     });
-
-    await t.step("do not starve in an infinite loop", async () => {
-        let c = after(10);
-        let i = 0;
-        while (++i) {
-            let ret = await select(
-                [
-                    [c, async () => {
-                        return "after";
-                    }],
-                ],
-                async () => {
-                    return "default";
-                },
-            );
-            if (ret === "after") {
-                break;
-            }
-        }
-    });
 });
+
+Deno.test("select on after", async ()=>{
+    let c = after(0);
+    let i = 0;
+    while (++i) {
+        let ret = await select(
+            [
+                [c, async () => {
+                    return "after";
+                }],
+            ],
+            async () => {
+                return "default";
+            },
+        );
+        if (ret === "after") {
+            break;
+        }
+    }
+    assertEquals(i, 1); // looped once
+    await c.close()
+})

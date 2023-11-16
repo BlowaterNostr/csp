@@ -256,6 +256,7 @@ export function after(ms: number): Channel<number> {
     let c = new Channel<number>();
     async function f() {
         await sleep(ms);
+        console.log("123")
         await c.put(ms); // todo: should it close or put?
     }
     f();
