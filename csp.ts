@@ -263,18 +263,19 @@ export function after(ms: number): Channel<number> {
 }
 
 // A promised setTimeout.
-export function sleep(ms: number, cancel?: Promise<void>) {
+export const not_cancelled = Symbol();
+export function sleep<T = never>(ms: number, cancel?: Promise<T>) {
     if (0 > ms || ms > MAX_INT_32) {
         throw Error(`${ms} is out of signed int32 bound or is negative`);
     }
-    return new Promise<boolean>((resolve, reject) => {
+    return new Promise<T | typeof not_cancelled>((resolve, _) => {
         let timeoutID = setTimeout(() => {
-            resolve(false); // is not cancelled
+            resolve(not_cancelled); // is not cancelled
         }, ms);
         if (cancel) {
-            cancel.then(() => {
+            cancel.then((res) => {
                 clearTimeout(timeoutID);
-                resolve(true); // is cancelled
+                resolve(res); // is cancelled
             });
         }
     });
