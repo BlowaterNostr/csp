@@ -13,3 +13,8 @@ cov:
 
 clear-coverage:
 	rm -rf $(coverage_dir)
+
+publish: # to npm
+	cp csp.ts nodejs/csp.ts
+	cd nodejs && npx tsc --lib ESNext,DOM csp.ts
+	cd nodejs && mv csp.js common.js
