@@ -1,0 +1,10 @@
+{
+  "name": "@blowater/csp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "common.js",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

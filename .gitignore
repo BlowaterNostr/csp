@@ -1,1 +1,4 @@
 cov_profile*
+nodejs/csp.ts
+nodejs/common.js
+node_modules
