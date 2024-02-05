@@ -15,7 +15,7 @@ export class PutToClosedChannelError extends Error {
 export class CloseChannelTwiceError extends Error {}
 
 // 2 base methods that all kinds of channels have to implement.
-interface base {
+interface Closeable {
     // Close this channel. This method does not block and returns immediately.
     // One might argue that if a IO like object implement this interface,
     // its close behavior might need to block.
@@ -29,13 +29,13 @@ interface base {
 export const closed = Symbol("closed");
 
 // One can only receive data from a PopChannel.
-export interface PopChannel<T> extends base {
+export interface PopChannel<T> {
     // Receive data from this channel.
     pop(): Promise<T | typeof closed>;
 }
 
 // One can only send data to a PutChannel.
-export interface PutChannel<T> extends base {
+export interface PutChannel<T> {
     // Send data to this channel.
     put(ele: T): Promise<Error | void>;
 }
@@ -54,7 +54,11 @@ interface PopperOnResolver<T> {
     (ele: { value: typeof closed; done: true } | { value: T; done: false }): void;
 }
 
-export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIterableIterator<T> {
+export type NonCloseableChannel<T> = PutChannel<T> & AsyncIterableIterator<T> & {
+    pop(): Promise<T>;
+}
+
+export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIterableIterator<T>, Closeable {
     private _closed: boolean = false;
     private close_reason: string = "";
 
