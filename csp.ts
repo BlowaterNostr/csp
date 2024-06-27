@@ -1,3 +1,4 @@
+/** used when code should not be reachable */
 export class UnreachableError extends Error {
     constructor(msg: string) {
         super(msg);
@@ -5,6 +6,7 @@ export class UnreachableError extends Error {
     }
 }
 
+/** one possible return value of `put` */
 export class PutToClosedChannelError extends Error {
     constructor() {
         super();
@@ -12,9 +14,12 @@ export class PutToClosedChannelError extends Error {
     }
 }
 
+/** possibly thrown by `close` */
 export class CloseChannelTwiceError extends Error {}
 
-// 2 base methods that all kinds of channels have to implement.
+/**
+ * 2 base methods that all kinds of channels have to implement.
+ */
 interface base {
     // Close this channel. This method does not block and returns immediately.
     // One might argue that if a IO like object implement this interface,
@@ -25,27 +30,30 @@ interface base {
     closed(): boolean | string;
 }
 
-// A symbol that indicate the channel has been closed and no further data to be read
+/** A symbol that indicates the channel has been closed and no further data to be read */
 export const closed = Symbol("closed");
 
-// One can only receive data from a PopChannel.
+/** One can only receive data from a PopChannel. */
 export interface PopChannel<T> extends base {
-    // Receive data from this channel.
+    /** Receive data from this channel. */
     pop(): Promise<T | typeof closed>;
 }
 
-// One can only send data to a PutChannel.
+/** One can only send data to a PutChannel. */
 export interface PutChannel<T> extends base {
-    // Send data to this channel.
+    /** Send data to this channel. */
     put(ele: T): Promise<Error | void>;
 }
 
-// Normally a channel can both pop/receive and be put/send data.
-// The documentation will use pop/receive and put/send interchangeably.
+/**
+ * Normally a channel can both pop/receive and be put/send data.
+ * The documentation will use pop/receive and put/send interchangeably.
+ */
 export interface BaseChannel<T> extends PopChannel<T>, PutChannel<T> {}
 
-// A SelectableChannel implements ready() method that will be used by select() function.
-// The signature of this method is subject to change.
+/**
+ * A SelectableChannel implements the `ready` method that will be used by the `select` function.
+ */
 export interface SeletableChannel<T> extends PopChannel<T> {
     ready(): Promise<SeletableChannel<T>>;
 }
@@ -54,6 +62,9 @@ interface PopperOnResolver<T> {
     (ele: { value: typeof closed; done: true } | { value: T; done: false }): void;
 }
 
+/**
+ * The full channel implementation
+ */
 export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIterableIterator<T> {
     private _closed: boolean = false;
     private close_reason: string = "";
@@ -169,9 +180,13 @@ export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIter
         }
     }
 
-    // put to a closed channel throws an error
-    // pop from a closed channel returns undefined
-    // close a closed channel throws an error
+    /**
+     * `put` to a closed channel returns a `PutToClosedChannelError`
+     *
+     * `pop` from a closed channel returns the `closed` symbol
+     *
+     * `close` a closed channel throws a `CloseChannelTwiceError`
+     */
     async close(reason?: string): Promise<void> {
         if (this._closed) {
             throw new CloseChannelTwiceError();
@@ -201,12 +216,13 @@ export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIter
         return this.close_reason || this._closed;
     }
 
-    [Symbol.asyncIterator]() {
+    [Symbol.asyncIterator](): typeof this {
         return this;
     }
 }
 
-export function chan<T>(bufferSize: number = 0) {
+/** short hand for `new Channel()` */
+export function chan<T>(bufferSize: number = 0): Channel<T> {
     return new Channel<T>(bufferSize);
 }
 
@@ -218,9 +234,12 @@ interface DefaultCase<T> {
     (): Promise<T>;
 }
 
-// select() is modelled after Go's select statement ( https://tour.golang.org/concurrency/5 )
-// and does the same thing and should have identical behavior.
-// https://stackoverflow.com/questions/37021194/how-are-golang-select-statements-implemented
+/**
+ * `select` is modelled after Go's select statement ( https://tour.golang.org/concurrency/5 )
+ * and does the same thing and should have identical behavior.
+ *
+ * https://stackoverflow.com/questions/37021194/how-are-golang-select-statements-implemented
+ */
 export async function select<Result>(
     channels: [SeletableChannel<any>, onSelect<any, Result>][],
     defaultCase?: DefaultCase<Result>,
@@ -250,9 +269,14 @@ export async function select<Result>(
 
 const MAX_INT_32 = Math.pow(2, 32) / 2 - 1;
 
-// A promised setTimeout.
-export const not_cancelled = Symbol();
-export function sleep<T = never>(ms: number, cancel?: Promise<T>) {
+/** the return value of `sleep` if it is not cancelled */
+export const not_cancelled: Symbol = Symbol();
+/**
+ * A promised setTimeout.
+ * @param ms Time to sleep
+ * @param cancel When this promise is resolved, the `sleep` will be cancelled
+ */
+export function sleep<T = never>(ms: number, cancel?: Promise<T>): Promise<T | Symbol> {
     if (0 > ms || ms > MAX_INT_32) {
         throw Error(`${ms} is out of signed int32 bound or is negative`);
     }
@@ -269,6 +293,9 @@ export function sleep<T = never>(ms: number, cancel?: Promise<T>) {
     });
 }
 
+/**
+ * Casting/duplicating values from one source channel to multiple destination channels
+ */
 export class Multicaster<T> {
     public listeners: Channel<T>[] = [];
     constructor(public source: Channel<T>) {
@@ -304,11 +331,13 @@ export class Multicaster<T> {
     }
 }
 
+/** short hand for `new Multicaster()` */
 export function multi<T>(c: Channel<T>): Multicaster<T> {
     return new Multicaster(c);
 }
 
-export function semaphore(n: number) {
+/** a channel based semaphore implementation */
+export function semaphore(n: number): <T>(lambda: () => T) => Promise<T> {
     const c = chan<void>(n);
     return async <T>(lambda: () => T) => {
         await c.put();
@@ -318,7 +347,8 @@ export function semaphore(n: number) {
     };
 }
 
-export function merge<T>(...iters: Channel<T>[]) {
+/** merge multiple channels into one */
+export function merge<T>(...iters: Channel<T>[]): Channel<T> {
     let merged = chan<T>();
     async function coroutine<T>(source: Channel<T>, destination: Channel<T>) {
         for await (let ele of source) {
