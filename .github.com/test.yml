@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: 1.44.0
+
+      - name: Verify formatting & other checks
+        run: deno fmt --check
+
+      - name: Run tests
+        run: make test
