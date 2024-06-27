@@ -4,7 +4,7 @@ test: clear-coverage
 	deno test --coverage=$(coverage_dir)
 
 fmt:
-	deno fmt --options-indent-width 4 --options-line-width 130
+	deno fmt
 
 cov:
 	deno coverage cov_profile --lcov --output=cov_profile.lcov

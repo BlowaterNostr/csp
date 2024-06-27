@@ -1,0 +1,9 @@
+{
+    "name": "@blowater/csp",
+    "version": "1.0.0",
+    "exports": "./csp.ts",
+    "fmt": {
+        "indentWidth": 4,
+        "lineWidth": 130
+    }
+}
