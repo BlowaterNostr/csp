@@ -115,6 +115,7 @@ export class Channel<T> implements SeletableChannel<T>, PutChannel<T>, AsyncIter
     // it returns only after the channel is ready
     async ready(): Promise<Channel<T>> {
         if (this.isReadyToPop()) {
+            await sleep(0);
             return this;
         } else {
             return new Promise((resolve) => {

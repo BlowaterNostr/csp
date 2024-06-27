@@ -185,3 +185,18 @@ Deno.test("wait until ready", async () => {
     c2.pop();
     assertEquals(c2.isReadyToPop(), false);
 });
+
+Deno.test("ready should always yield the control", async () => {
+    let c = chan();
+    (async () => {
+        for (;;) {
+            await c.ready();
+            if (c.closed()) {
+                return; // should reach this line and finish
+            }
+        }
+    })();
+    /* no await */ c.put(1);
+    await sleep(0);
+    await c.close(); // should reach this line and finish
+});
